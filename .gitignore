@@ -1,0 +1,28 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.npm
+.npmrc
+
+# Next.js
+/.next/
+/out/
+
+# Python
+__pycache__/
+*.py[cod]
+/.venv/
+/server/.venv/
+
+# environment and secrets
+.env
+.env.*
+!.env.example
+!server/.env.example
+
+# local tooling
+*.log
+*.tsbuildinfo
+.DS_Store
+Thumbs.db
