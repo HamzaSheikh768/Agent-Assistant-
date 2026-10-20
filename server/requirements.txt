@@ -4,4 +4,5 @@ mcp==2.3.0
 openai-agents==0.24.0
 openai-chatkit==1.6.5
 python-dotenv==1.2.2
+truststore==0.10.5
 uvicorn==0.54.0

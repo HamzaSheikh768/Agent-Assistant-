@@ -1,10 +1,10 @@
 import { BrandMark } from "@/components/brand-mark";
 import { ChatKitPanel } from "@/components/chatkit-panel";
+import { isChatBackendReady } from "@/lib/chatkit-backend";
 
-export function ChatWorkspace() {
-  const isConfigured = Boolean(
-    process.env.NEXT_PUBLIC_CHATKIT_DOMAIN_KEY,
-  );
+export async function ChatWorkspace() {
+  const hasDomainKey = Boolean(process.env.NEXT_PUBLIC_CHATKIT_DOMAIN_KEY);
+  const isConfigured = hasDomainKey && (await isChatBackendReady());
 
   return (
     <main className="workspace">

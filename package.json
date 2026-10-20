@@ -8,7 +8,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:frontend": "node --test --experimental-strip-types tests/frontend/*.test.mjs",
+    "test:backend": "python -m unittest discover -s tests/backend -v",
+    "test": "node --test --experimental-strip-types tests/frontend/*.test.mjs && python -m unittest discover -s tests/backend -v"
   },
   "dependencies": {
     "@openai/chatkit-react": "1.6.1",
