@@ -16,7 +16,7 @@ from chatkit.types import (
     UserMessageItem,
     UserMessageTextContent,
 )
-from server.app import _authorize, app, health_live, server
+from server.app import _authorize, app
 from server.gemini_agent import GeminiAgent
 from server.store import MemoryStore
 from server.usage import Usage
@@ -59,7 +59,7 @@ class FakeModels:
 
 
 class BackendTests(unittest.IsolatedAsyncioTestCase):
-    async def test_health_and_request_size_routes(self) -> None:
+    async def test_readiness_and_request_size_routes(self) -> None:
         transport = ASGITransport(app=app)
         with patch.dict(
             os.environ,
@@ -71,7 +71,8 @@ class BackendTests(unittest.IsolatedAsyncioTestCase):
             async with AsyncClient(
                 transport=transport, base_url="http://testserver"
             ) as client:
-                live = await client.get("/health/live")
+                removed_health = await client.get("/health")
+                removed_liveness = await client.get("/health/live")
                 ready = await client.get(
                     "/health/ready",
                     headers={"authorization": "Bearer expected"},
@@ -82,14 +83,11 @@ class BackendTests(unittest.IsolatedAsyncioTestCase):
                     content=b"12345678901",
                 )
 
-        self.assertEqual(live.status_code, 200)
-        self.assertTrue(live.headers.get("x-request-id"))
+        self.assertEqual(removed_health.status_code, 404)
+        self.assertEqual(removed_liveness.status_code, 404)
         self.assertIn(ready.status_code, {200, 503})
+        self.assertTrue(ready.headers.get("x-request-id"))
         self.assertEqual(oversized.status_code, 413)
-
-    async def test_liveness_does_not_claim_provider_readiness(self) -> None:
-        self.assertEqual(await health_live(), {"status": "alive"})
-        self.assertIsInstance(server.agent.ready, bool)
 
     async def test_internal_auth_rejects_invalid_token(self) -> None:
         request = Request(

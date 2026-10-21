@@ -86,11 +86,6 @@ async def request_observability(request: Request, call_next):  # type: ignore[no
     return response
 
 
-@app.get("/health/live")
-async def health_live() -> dict[str, str]:
-    return {"status": "alive"}
-
-
 async def _readiness_response() -> JSONResponse:
     provider_ready, provider_status = await server.agent.readiness()
     ready = provider_ready and bool(os.getenv("CHATKIT_INTERNAL_TOKEN"))
@@ -108,11 +103,6 @@ async def _readiness_response() -> JSONResponse:
         },
         headers={"cache-control": "no-store"},
     )
-
-
-@app.get("/health")
-async def health() -> JSONResponse:
-    return await _readiness_response()
 
 
 @app.get("/health/ready")
