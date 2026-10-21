@@ -2,7 +2,10 @@ import { randomUUID } from "node:crypto";
 
 import { NextRequest } from "next/server";
 
-import { getChatkitEndpoint } from "@/lib/chatkit-backend";
+import {
+  getChatkitEndpoint,
+  getChatkitPublicFallbackEndpoint,
+} from "@/lib/chatkit-backend";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import {
   contentLengthExceedsLimit,
@@ -136,19 +139,49 @@ export async function POST(request: NextRequest) {
   const timeoutMs = positiveInteger(process.env.CHATKIT_UPSTREAM_TIMEOUT_MS, 30_000);
   const timeoutController = new AbortController();
   const timeout = setTimeout(() => timeoutController.abort(), timeoutMs);
+  const upstreamHeaders = {
+    authorization: `Bearer ${internalToken}`,
+    "content-type": request.headers.get("content-type") ?? "application/json",
+    "x-request-id": id,
+  };
+  const upstreamSignal = AbortSignal.any([
+    request.signal,
+    timeoutController.signal,
+  ]);
 
   try {
-    const upstream = await fetch(getChatkitEndpoint(), {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${internalToken}`,
-        "content-type": request.headers.get("content-type") ?? "application/json",
-        "x-request-id": id,
-      },
-      body,
-      cache: "no-store",
-      signal: AbortSignal.any([request.signal, timeoutController.signal]),
-    });
+    let upstream: Response;
+    let transport = "service_binding";
+
+    try {
+      upstream = await fetch(getChatkitEndpoint(), {
+        method: "POST",
+        headers: upstreamHeaders,
+        body,
+        cache: "no-store",
+        signal: upstreamSignal,
+      });
+    } catch (bindingError) {
+      const fallbackEndpoint = getChatkitPublicFallbackEndpoint();
+      if (!fallbackEndpoint || upstreamSignal.aborted) {
+        throw bindingError;
+      }
+
+      transport = "public_service_fallback";
+      serverLog("warn", "chatkit_upstream_fallback", {
+        requestId: id,
+        durationMs: Math.round(performance.now() - startedAt),
+        errorType:
+          bindingError instanceof Error ? bindingError.name : "UnknownError",
+      });
+      upstream = await fetch(fallbackEndpoint, {
+        method: "POST",
+        headers: upstreamHeaders,
+        body,
+        cache: "no-store",
+        signal: upstreamSignal,
+      });
+    }
     clearTimeout(timeout);
 
     const responseHeaders = new Headers(rateHeaders);
@@ -166,6 +199,7 @@ export async function POST(request: NextRequest) {
       durationMs: Math.round(performance.now() - startedAt),
       requestBytes: body.byteLength,
       rateLimitBackend: rateLimit.backend,
+      transport,
     });
 
     return new Response(

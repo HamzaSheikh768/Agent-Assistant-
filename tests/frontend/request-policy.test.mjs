@@ -28,5 +28,9 @@ test("Vercel deploy config connects Next.js and FastAPI services", () => {
   assert.equal(config.services.frontend.bindings[0].service, "backend");
   assert.equal(config.services.backend.framework, "fastapi");
   assert.equal(config.services.backend.entrypoint, "server.app:app");
-  assert.equal(config.rewrites[0].destination.service, "frontend");
+  assert.equal(config.services.backend.rewrites[0].source, "/_agent/chatkit");
+  assert.equal(config.services.backend.rewrites[0].destination, "/chatkit");
+  assert.equal(config.rewrites[0].source, "/_agent/chatkit");
+  assert.equal(config.rewrites[0].destination.service, "backend");
+  assert.equal(config.rewrites[1].destination.service, "frontend");
 });

@@ -37,6 +37,25 @@ export function getChatkitEndpoint(): string {
   return `${baseURL}/chatkit`;
 }
 
+export function getChatkitPublicFallbackEndpoint(): string | null {
+  if (process.env.CHATKIT_SERVER_URL?.trim()) {
+    return null;
+  }
+
+  const serviceURL = process.env.BACKEND_URL?.trim();
+  const deploymentHost = process.env.VERCEL_URL?.trim();
+  if (!serviceURL || !deploymentHost) {
+    return null;
+  }
+
+  try {
+    const deploymentOrigin = new URL(`https://${deploymentHost}`).origin;
+    return `${deploymentOrigin}/_agent/chatkit`;
+  } catch {
+    return null;
+  }
+}
+
 export function getBackendReadinessEndpoint(): string {
   const baseURL = configuredBackendBase();
   if (!baseURL) {

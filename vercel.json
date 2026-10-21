@@ -16,10 +16,22 @@
     "backend": {
       "root": ".",
       "framework": "fastapi",
-      "entrypoint": "server.app:app"
+      "entrypoint": "server.app:app",
+      "rewrites": [
+        {
+          "source": "/_agent/chatkit",
+          "destination": "/chatkit"
+        }
+      ]
     }
   },
   "rewrites": [
+    {
+      "source": "/_agent/chatkit",
+      "destination": {
+        "service": "backend"
+      }
+    },
     {
       "source": "/(.*)",
       "destination": {
