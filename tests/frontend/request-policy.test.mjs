@@ -7,6 +7,7 @@ import {
   contentLengthExceedsLimit,
   positiveInteger,
 } from "../../src/lib/request-policy.ts";
+import { getChatkitPublicFallbackEndpoint } from "../../src/lib/chatkit-backend.ts";
 
 test("request-size policy rejects oversized declared bodies", () => {
   assert.equal(DEFAULT_MAX_REQUEST_BYTES, 1_048_576);
@@ -33,4 +34,39 @@ test("Vercel deploy config connects Next.js and FastAPI services", () => {
   assert.equal(config.rewrites[0].source, "/_agent/chatkit");
   assert.equal(config.rewrites[0].destination.service, "backend");
   assert.equal(config.rewrites[1].destination.service, "frontend");
+});
+
+test("public fallback only targets a trusted Vercel deployment origin", () => {
+  const previous = {
+    backendURL: process.env.BACKEND_URL,
+    chatkitURL: process.env.CHATKIT_SERVER_URL,
+    vercelURL: process.env.VERCEL_URL,
+  };
+
+  process.env.BACKEND_URL = "http://backend.internal";
+  delete process.env.CHATKIT_SERVER_URL;
+  delete process.env.VERCEL_URL;
+
+  try {
+    assert.equal(
+      getChatkitPublicFallbackEndpoint("https://assistant-bots.vercel.app"),
+      "https://assistant-bots.vercel.app/_agent/chatkit",
+    );
+    assert.equal(
+      getChatkitPublicFallbackEndpoint("https://example.com"),
+      null,
+    );
+  } finally {
+    for (const [name, value] of Object.entries({
+      BACKEND_URL: previous.backendURL,
+      CHATKIT_SERVER_URL: previous.chatkitURL,
+      VERCEL_URL: previous.vercelURL,
+    })) {
+      if (value === undefined) {
+        delete process.env[name];
+      } else {
+        process.env[name] = value;
+      }
+    }
+  }
 });

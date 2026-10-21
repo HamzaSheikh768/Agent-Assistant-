@@ -37,19 +37,30 @@ export function getChatkitEndpoint(): string {
   return `${baseURL}/chatkit`;
 }
 
-export function getChatkitPublicFallbackEndpoint(): string | null {
+export function getChatkitPublicFallbackEndpoint(
+  requestOrigin?: string,
+): string | null {
   if (process.env.CHATKIT_SERVER_URL?.trim()) {
     return null;
   }
 
   const serviceURL = process.env.BACKEND_URL?.trim();
-  const deploymentHost = process.env.VERCEL_URL?.trim();
-  if (!serviceURL || !deploymentHost) {
+  if (!serviceURL) {
     return null;
   }
 
   try {
-    const deploymentOrigin = new URL(`https://${deploymentHost}`).origin;
+    const deploymentHost = process.env.VERCEL_URL?.trim();
+    const deploymentURL = deploymentHost
+      ? new URL(`https://${deploymentHost}`)
+      : new URL(requestOrigin ?? "");
+    if (
+      deploymentURL.protocol !== "https:" ||
+      !deploymentURL.hostname.endsWith(".vercel.app")
+    ) {
+      return null;
+    }
+    const deploymentOrigin = deploymentURL.origin;
     return `${deploymentOrigin}/_agent/chatkit`;
   } catch {
     return null;

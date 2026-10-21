@@ -148,6 +148,7 @@ export async function POST(request: NextRequest) {
     request.signal,
     timeoutController.signal,
   ]);
+  let fallbackAttempted = false;
 
   try {
     let upstream: Response;
@@ -162,11 +163,14 @@ export async function POST(request: NextRequest) {
         signal: upstreamSignal,
       });
     } catch (bindingError) {
-      const fallbackEndpoint = getChatkitPublicFallbackEndpoint();
+      const fallbackEndpoint = getChatkitPublicFallbackEndpoint(
+        request.nextUrl.origin,
+      );
       if (!fallbackEndpoint || upstreamSignal.aborted) {
         throw bindingError;
       }
 
+      fallbackAttempted = true;
       transport = "public_service_fallback";
       serverLog("warn", "chatkit_upstream_fallback", {
         requestId: id,
@@ -225,7 +229,10 @@ export async function POST(request: NextRequest) {
         ? "The chat service timed out. Please retry."
         : "The chat service is temporarily unavailable.",
       id,
-      rateHeaders,
+      {
+        ...rateHeaders,
+        "x-chatkit-fallback": fallbackAttempted ? "attempted" : "unavailable",
+      },
     );
   }
 }
