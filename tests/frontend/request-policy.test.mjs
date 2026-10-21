@@ -7,7 +7,10 @@ import {
   contentLengthExceedsLimit,
   positiveInteger,
 } from "../../src/lib/request-policy.ts";
-import { getChatkitPublicFallbackEndpoint } from "../../src/lib/chatkit-backend.ts";
+import {
+  getChatkitEndpoint,
+  getChatkitPublicFallbackEndpoint,
+} from "../../src/lib/chatkit-backend.ts";
 
 test("request-size policy rejects oversized declared bodies", () => {
   assert.equal(DEFAULT_MAX_REQUEST_BYTES, 1_048_576);
@@ -61,6 +64,35 @@ test("public fallback only targets a trusted Vercel deployment origin", () => {
       BACKEND_URL: previous.backendURL,
       CHATKIT_SERVER_URL: previous.chatkitURL,
       VERCEL_URL: previous.vercelURL,
+    })) {
+      if (value === undefined) {
+        delete process.env[name];
+      } else {
+        process.env[name] = value;
+      }
+    }
+  }
+});
+
+test("Vercel service binding takes priority over a manual backend URL", () => {
+  const previous = {
+    backendURL: process.env.BACKEND_URL,
+    chatkitURL: process.env.CHATKIT_SERVER_URL,
+  };
+
+  process.env.BACKEND_URL = "http://backend.internal";
+  process.env.CHATKIT_SERVER_URL = "https://stale.example.com/chatkit";
+
+  try {
+    assert.equal(getChatkitEndpoint(), "http://backend.internal/chatkit");
+    assert.equal(
+      getChatkitPublicFallbackEndpoint("https://assistant-bots.vercel.app"),
+      "https://assistant-bots.vercel.app/_agent/chatkit",
+    );
+  } finally {
+    for (const [name, value] of Object.entries({
+      BACKEND_URL: previous.backendURL,
+      CHATKIT_SERVER_URL: previous.chatkitURL,
     })) {
       if (value === undefined) {
         delete process.env[name];

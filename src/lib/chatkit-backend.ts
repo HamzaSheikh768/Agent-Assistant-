@@ -23,11 +23,6 @@ function configuredBackendBase(): string | null {
 }
 
 export function getChatkitEndpoint(): string {
-  const explicitURL = process.env.CHATKIT_SERVER_URL?.trim();
-  if (explicitURL) {
-    return explicitURL;
-  }
-
   const baseURL = configuredBackendBase();
   if (!baseURL) {
     throw new Error(
@@ -40,7 +35,10 @@ export function getChatkitEndpoint(): string {
 export function getChatkitPublicFallbackEndpoint(
   requestOrigin?: string,
 ): string | null {
-  if (process.env.CHATKIT_SERVER_URL?.trim()) {
+  if (
+    process.env.CHATKIT_SERVER_URL?.trim() &&
+    !process.env.BACKEND_URL?.trim()
+  ) {
     return null;
   }
 
