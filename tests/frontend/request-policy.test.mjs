@@ -43,7 +43,7 @@ test("public fallback only targets a trusted Vercel deployment origin", () => {
     vercelURL: process.env.VERCEL_URL,
   };
 
-  process.env.BACKEND_URL = "http://backend.internal";
+  delete process.env.BACKEND_URL;
   delete process.env.CHATKIT_SERVER_URL;
   delete process.env.VERCEL_URL;
 

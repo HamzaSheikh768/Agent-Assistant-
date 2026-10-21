@@ -44,11 +44,6 @@ export function getChatkitPublicFallbackEndpoint(
     return null;
   }
 
-  const serviceURL = process.env.BACKEND_URL?.trim();
-  if (!serviceURL) {
-    return null;
-  }
-
   try {
     const deploymentHost = process.env.VERCEL_URL?.trim();
     const deploymentURL = deploymentHost
