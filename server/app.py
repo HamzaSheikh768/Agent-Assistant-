@@ -19,7 +19,13 @@ from server.store import MemoryStore
 
 truststore.inject_into_ssl()
 
-app = FastAPI(title="Northstar ChatKit agent", version="0.2.0")
+app = FastAPI(
+    title="Northstar ChatKit agent",
+    version="0.2.0",
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
+)
 store = MemoryStore()
 server = GeminiChatKitServer(store, GeminiAgent())
 

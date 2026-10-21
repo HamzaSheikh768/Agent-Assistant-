@@ -73,6 +73,9 @@ class BackendTests(unittest.IsolatedAsyncioTestCase):
             ) as client:
                 removed_health = await client.get("/health")
                 removed_liveness = await client.get("/health/live")
+                removed_docs = await client.get("/docs")
+                removed_redoc = await client.get("/redoc")
+                removed_openapi = await client.get("/openapi.json")
                 ready = await client.get(
                     "/health/ready",
                     headers={"authorization": "Bearer expected"},
@@ -85,6 +88,9 @@ class BackendTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(removed_health.status_code, 404)
         self.assertEqual(removed_liveness.status_code, 404)
+        self.assertEqual(removed_docs.status_code, 404)
+        self.assertEqual(removed_redoc.status_code, 404)
+        self.assertEqual(removed_openapi.status_code, 404)
         self.assertIn(ready.status_code, {200, 503})
         self.assertTrue(ready.headers.get("x-request-id"))
         self.assertEqual(oversized.status_code, 413)
