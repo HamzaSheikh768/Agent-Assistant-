@@ -144,10 +144,7 @@ export async function POST(request: NextRequest) {
     "content-type": request.headers.get("content-type") ?? "application/json",
     "x-request-id": id,
   };
-  const upstreamSignal = AbortSignal.any([
-    request.signal,
-    timeoutController.signal,
-  ]);
+  const upstreamSignal = timeoutController.signal;
   let fallbackAttempted = false;
 
   try {
@@ -166,7 +163,7 @@ export async function POST(request: NextRequest) {
       const fallbackEndpoint = getChatkitPublicFallbackEndpoint(
         request.nextUrl.origin,
       );
-      if (!fallbackEndpoint || upstreamSignal.aborted) {
+      if (!fallbackEndpoint || timeoutController.signal.aborted) {
         throw bindingError;
       }
 
